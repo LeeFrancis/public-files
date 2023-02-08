@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GITLABRunnerExecutor='shell'
+GITLABRunnerExecutor='docker'
 
 IMDS_TOKEN="$(curl -X PUT http://169.254.169.254/latest/api/token -H X-aws-ec2-metadata-token-ttl-seconds:21600)"
 MYIP="$(curl -H X-aws-ec2-metadata-token:$IMDS_TOKEN http://169.254.169.254/latest/meta-data/local-ipv4)"
@@ -45,6 +45,14 @@ fi
 
 set -e
 
+if [[ -z "$(command -v docker)" ]] ; then
+  echo "Docker not present, installing..."
+  amazon-linux-extras install docker
+  usermod -a -G docker ec2-user
+  systemctl enable docker.service
+  systemctl start docker.service
+fi
+
 RunnerCompleteTagList="$RunnerOSTags,glexecutor-$GITLABRunnerExecutor,${OSInstanceLinuxArch,,}"
 
 if [[ -n "${GITLABRunnerTagList}" ]]; then RunnerCompleteTagList="$RunnerCompleteTagList,${GITLABRunnerTagList,,}"; fi
@@ -57,29 +65,30 @@ curl https://gitlab-runner-downloads.s3.amazonaws.com/${GITLABRunnerVersion,,}/b
 chmod +x $RunnerInstallRoot/gitlab-runner
 if ! id -u "gitlab-runner" >/dev/null 2>&1; then
   useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
-  #sudo usermod -a -G docker gitlab-runner
 fi
-$RunnerInstallRoot/gitlab-runner install --user="gitlab-runner" --working-directory="/home/gitlab-runner"
+$RunnerInstallRoot/gitlab-runner install --user="gitlab-runner" --working-directory="/gitlab-runner"
 echo -e "\nRunning scripts as '$(whoami)'\n\n"
 
 for RunnerRegToken in ${GITLABRunnerRegTokenList//;/ }
 do
-  $RunnerInstallRoot/gitlab-runner register 
-    --executor "docker" \
-    --docker-image="docker:stable" \
+  $RunnerInstallRoot/gitlab-runner register \
+    --non-interactive \
+    --name $RunnerName \
+    --config $RunnerConfigToml \
     --url "$GITLABRunnerInstanceURL" \
     --registration-token "$RunnerRegToken" \
+    --executor "$GITLABRunnerExecutor" \
+    --docker-image="docker:stable" \
+    --url "$GITLABRunnerInstanceURL" \
     --description "cq-sans-dind" \
     --tag-list "$RunnerCompleteTagList" \
     --locked="false" \
     --access-level="not_protected" \
     --docker-volumes "/cache"\
-    --docker-volumes "/builds:/builds"\
+    --docker-volumes "/tmp/builds:/tmp/builds"
     --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
-    --registration-token="<project_token>" \
-    --non-interactive \
-    --builds-dir "/tmp/builds" \
-    --docker-volumes "/tmp/builds:/tmp/builds"    
+    --registration-token "$RunnerRegToken" \
+    --builds-dir "/tmp/builds"
 done
 
 sed -i "s/^\s*concurrent.*/concurrent = $GITLABRunnerConcurrentJobs/g" $RunnerConfigToml
@@ -206,20 +215,14 @@ cat << 'EndOfCWMetricsConfig' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-clou
 EndOfCWMetricsConfig
 systemctl enable amazon-cloudwatch-agent
 systemctl restart amazon-cloudwatch-agent
-
-#Install git for shell runner
-yum -y install git
-
 #Debugging:
-#Check if running: sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
-#config: cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-#log file: tail /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log -f
-#wizard saves: /opt/aws/amazon-cloudwatch-agent/bin/config.json
-#amazon-linux-extras install -y epel; yum install -y stress-ng
-#stress-ng --vm 1 --vm-bytes 75% --vm-method all --verify -t 10m -v
-#stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemTotal/{printf "%d\n", $2;}' < /proc/meminfo)k
-# --vm-method all
-#stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemAvailable/{printf "%d\n", $2 * 0.9;}' < /proc/meminfo)k
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+tail /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log -f /opt/aws/amazon-cloudwatch-agent/bin/config.json
+install -y epel; yum install -y stress-ng
+stress-ng --vm 1 --vm-bytes 75% --vm-method all --verify -t 10m -v
+stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemTotal/{printf "%d\n", $2;}' < /proc/meminfo)k --vm-method all
+stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemAvailable/{printf "%d\n", $2 * 0.9;}' < /proc/meminfo)k
 
 
 #90% of available memory: $(awk '/MemAvailable/{printf "%d\n", $2 * 0.9;}' < /proc/meminfo)k
