@@ -84,8 +84,8 @@ do
     --tag-list "$RunnerCompleteTagList" \
     --locked="false" \
     --access-level="not_protected" \
-    --docker-volumes "/cache"\
-    --docker-volumes "/tmp/builds:/tmp/builds"
+    --docker-volumes "/cache" \
+    --docker-volumes "/tmp/builds:/tmp/builds" \
     --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
     --registration-token "$RunnerRegToken" \
     --builds-dir "/tmp/builds"
