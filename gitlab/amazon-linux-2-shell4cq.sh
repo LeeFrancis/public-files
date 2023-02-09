@@ -80,7 +80,6 @@ do
     --executor "$GITLABRunnerExecutor" \
     --docker-image="docker:stable" \
     --url "$GITLABRunnerInstanceURL" \
-    --description "cq-sans-dind" \
     --tag-list "$RunnerCompleteTagList" \
     --locked="false" \
     --access-level="not_protected" \
