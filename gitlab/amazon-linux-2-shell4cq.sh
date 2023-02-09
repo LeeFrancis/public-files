@@ -222,13 +222,13 @@ EndOfCWMetricsConfig
 systemctl enable amazon-cloudwatch-agent
 systemctl restart amazon-cloudwatch-agent
 #Debugging:
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
-cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-tail /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log -f /opt/aws/amazon-cloudwatch-agent/bin/config.json
-install -y epel; yum install -y stress-ng
-stress-ng --vm 1 --vm-bytes 75% --vm-method all --verify -t 10m -v
-stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemTotal/{printf "%d\n", $2;}' < /proc/meminfo)k --vm-method all
-stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemAvailable/{printf "%d\n", $2 * 0.9;}' < /proc/meminfo)k
+#sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+#cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+#tail /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log -f /opt/aws/amazon-cloudwatch-agent/bin/config.json
+#install -y epel; yum install -y stress-ng
+#stress-ng --vm 1 --vm-bytes 75% --vm-method all --verify -t 10m -v
+#stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemTotal/{printf "%d\n", $2;}' < /proc/meminfo)k --vm-method all
+#stress-ng --vm-hang 2 --vm-keep --verify --timeout 600 --verbose --vm 2 --vm-bytes $(awk '/MemAvailable/{printf "%d\n", $2 * 0.9;}' < /proc/meminfo)k
 
 
 #90% of available memory: $(awk '/MemAvailable/{printf "%d\n", $2 * 0.9;}' < /proc/meminfo)k
