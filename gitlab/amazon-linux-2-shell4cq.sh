@@ -78,15 +78,22 @@ do
     --url "$GITLABRunnerInstanceURL" \
     --registration-token "$RunnerRegToken" \
     --executor "$GITLABRunnerExecutor" \
-    --docker-image="docker:stable" \
-    --url "$GITLABRunnerInstanceURL" \
+    --run-untagged="false" \
     --tag-list "$RunnerCompleteTagList" \
     --locked="false" \
-    --access-level="not_protected" \
+    --cache-type "s3" \
+    --cache-path "/" \
+    --cache-shared="true" \
+    --cache-s3-server-address "s3.amazonaws.com" \
+    --cache-s3-bucket-name $GITLABRunnerS3CacheBucket \
+    --cache-s3-bucket-location $AWS_REGION \
     --docker-volumes "/cache" \
     --docker-volumes "/tmp/builds:/tmp/builds" \
     --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
-    --registration-token "$RunnerRegToken" \
+    --docker-image="docker:latest" \
+    --docker-privileged \
+    --docker-tlsverify="false" \
+    --docker-disable-cache="false" \
     --builds-dir "/tmp/builds"
 done
 
