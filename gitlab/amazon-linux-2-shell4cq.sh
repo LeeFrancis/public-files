@@ -67,7 +67,7 @@ if ! id -u "gitlab-runner" >/dev/null 2>&1; then
   useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
 fi
 $RunnerInstallRoot/gitlab-runner install --user="gitlab-runner" --working-directory="/gitlab-runner"
-echo -e "\nRunning scripts as '$(whoami)'\n\n"
+echo -e "\nRunning Clinical Decisions script as '$(whoami)'\n\n"
 
 for RunnerRegToken in ${GITLABRunnerRegTokenList//;/ }
 do
@@ -145,7 +145,7 @@ if [ ! -z "$NAMEOFASG" ] && [ "$ASGSelfMonitorTerminationInterval" != "Disabled"
 EndOfScript
 fi
 
-echo "Settings up CloudWatch Metrics to Enable Scaling on Memory Utilization"
+echo "Settings up CloudWatch Metrics to Enable Scaling on Memory Utilization - Clinical Decisions"
 yum install -y amazon-cloudwatch-agent
 systemctl stop amazon-cloudwatch-agent
 cat << 'EndOfCWMetricsConfig' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
@@ -221,6 +221,10 @@ cat << 'EndOfCWMetricsConfig' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-clou
 EndOfCWMetricsConfig
 systemctl enable amazon-cloudwatch-agent
 systemctl restart amazon-cloudwatch-agent
+
+NAMEOFASG="$(aws ec2 describe-tags --region $AWS_REGION --filters {"Name=resource-id,Values=$MYINSTANCEID","Name=key,Values=aws:autoscaling:groupName"} --output=text | cut -f5)"
+logit("ASG = $NAMEOFASG")
+
 #Debugging:
 #sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
 #cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
