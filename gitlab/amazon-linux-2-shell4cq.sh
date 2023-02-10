@@ -223,7 +223,7 @@ systemctl enable amazon-cloudwatch-agent
 systemctl restart amazon-cloudwatch-agent
 
 NAMEOFASG="$(aws ec2 describe-tags --region $AWS_REGION --filters {"Name=resource-id,Values=$MYINSTANCEID","Name=key,Values=aws:autoscaling:groupName"} --output=text | cut -f5)"
-logit("ASG = $NAMEOFASG")
+logit "ASG = $NAMEOFASG"
 
 #Debugging:
 #sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
